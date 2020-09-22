@@ -1,0 +1,40 @@
+version: '3'
+services:
+
+  webserver:
+    image: nginx:latest
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "8080:80"
+      # - "443:443"
+    volumes:
+      - ${APP_WORKSPACE}/app/:/var/www/${APP_NAME}
+      - ${WORKSPACE_DEVOPS_UTILS}/docker/lumen/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ${WORKSPACE_DEVOPS_UTILS}/docker/lumen/nginx/sites/:/etc/nginx/conf.d/
+      # - ./docker/nginx/ssl/:/etc/ssl/
+    networks:
+      - app-network
+
+  lumen-app:
+    build:
+      context: app
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: $APP_NAME
+    image: digitalocean.com/php
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: ${APP_NAME}
+      SERVICE_TAGS: dev
+    working_dir: /var/www/${APP_NAME}
+    volumes:
+      - ./app:/var/www/${APP_NAME}
+      - ${WORKSPACE_DEVOPS_UTILS}/docker/lumen/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
